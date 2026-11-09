@@ -25,6 +25,11 @@ public class Event
     // Deliberately left unused by any Part 2 endpoint — see README for why.
     public string? RouteMapUrl { get; set; }
 
+    // Part 3: public URL of the event banner image stored in Azure Blob
+    // Storage. Only the URL is kept in SQL Server; the file itself lives in
+    // the blob container.
+    public string? BannerImageUrl { get; set; }
+
     public string? Description { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
