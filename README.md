@@ -79,3 +79,102 @@ An unlisted YouTube video walking through the planning documents, ERD design dec
 
 <!-- Paste your unlisted YouTube link here -->
 **[Video link here]**
+
+---
+
+## Part 2 — RESTful API
+
+### Repository Structure (updated)
+
+```
+├── .github/
+│   └── workflows/
+│       ├── validate-repo-structure.yml   # Part 1 CI: validates /docs files
+│       └── build-and-test.yml            # Part 2 CI: builds API + runs unit tests
+├── docs/
+│   ├── RaceDay_ERD.png
+│   ├── RaceDay_API_Endpoint_Plan.md
+│   └── RaceDay_Database.sql
+├── RaceDay.Api/                          # ASP.NET Core Web API (Part 2)
+│   ├── Controllers/                      # Auth, Users, Events, Categories, Enrolments, Results
+│   ├── Models/                           # EF Core entities (match the Part 1 ERD exactly)
+│   ├── Data/                             # DbContext, Code-First configuration, seed data
+│   ├── DTOs/                             # Request/response shapes per the Part 1 endpoint plan
+│   ├── Auth/                             # Session-based authentication + role enforcement
+│   └── Services/                         # Weather service (Open-Meteo integration)
+├── RaceDay.Api.Tests/                    # xUnit test project
+├── RaceDay.sln
+└── README.md
+```
+
+### What Part 2 Implements
+
+A RESTful API built with ASP.NET Core Web API (C#), following the endpoint plan approved in Part 1 exactly — every route, role, and failure case from `docs/RaceDay_API_Endpoint_Plan.md` is implemented here.
+
+**Database:** Entity Framework Core, Code-First. The model classes in `RaceDay.Api/Models/` and the Fluent API configuration in `RaceDay.Api/Data/RaceDayDbContext.cs` reproduce the Part 1 ERD and SQL script field-for-field — including the `CHECK` constraints (event type, category type/age/distance combination) and `UNIQUE` constraints (one email per user, one enrolment per participant per category, one result per enrolment) from Part 1's Section C.
+
+**Authentication:** Session-based, not token-based. On login, the server stores `UserId` and `Role` in a server-side session (`RaceDay.Api/Auth/RequireSessionAttribute.cs`), and every subsequent request is authenticated and authorized from that session — matching the brief's explicit requirement for "session management to maintain the user's authenticated state and role." Passwords are hashed with BCrypt and never stored in plain text.
+
+**Role enforcement:** A custom `[RequireSession]` authorization attribute enforces both "must be logged in" (401 if not) and "must be the right role" (403 if wrong role) on every protected endpoint — for example, only the Organiser who created an event can edit or delete it; only a Participant can enrol in a category.
+
+**Weather integration:** `GET /api/events/{id}/weather` calls the free Open-Meteo API using the event's `Latitude`/`Longitude` from the Part 1 ERD, fulfilling the background brief's "live weather information" feature a full part ahead of when it was strictly due.
+
+### Setup Instructions
+
+**Prerequisites:** .NET 8 SDK, SQL Server (or SQL Server Express/LocalDB), and the EF Core CLI tool.
+
+1. Clone the repository and restore dependencies:
+   ```
+   dotnet restore RaceDay.sln
+   ```
+
+2. Update the connection string in `RaceDay.Api/appsettings.json` if your SQL Server instance isn't on `localhost` with Windows/Trusted authentication.
+
+3. **Generate the initial migration** (not committed to source control, since it must be generated against your own environment the first time):
+   ```
+   cd RaceDay.Api
+   dotnet tool install --global dotnet-ef   (if not already installed)
+   dotnet ef migrations add InitialCreate
+   ```
+
+4. Run the API:
+   ```
+   dotnet run --project RaceDay.Api
+   ```
+   On first run, the database is created automatically (via `Database.Migrate()`), and seed data is inserted — matching Part 1's Section C: 2 Organisers, 2 Participants, 3 Events, 6 Categories, 4 Enrolments, 3 Results.
+
+5. Open Swagger UI at `https://localhost:5001/swagger` (or `http://localhost:5000/swagger`) to view and test every endpoint directly in the browser.
+
+   **Seeded test accounts** (password for all: `Password123!`):
+   - Organiser: `thabo.nkosi@raceday.co.za`
+   - Participant: `sarah.vdm@example.com`
+
+### Running the Tests
+
+```
+dotnet test RaceDay.Api.Tests/RaceDay.Api.Tests.csproj
+```
+
+22 tests across 4 test classes, covering both expected success and expected failure scenarios for every required area from the Part 2 brief:
+- `AuthTests` — registration and login (valid/invalid roles, duplicate email, wrong password, protected routes without a session)
+- `EventManagementTests` — Organiser create/update/delete, ownership enforcement, invalid event types
+- `RoleEnforcementTests` — Participants rejected from Organiser-only actions and vice versa, anonymous requests rejected
+- `EnrolmentTests` — correct Participant+Category+Event linkage, duplicate enrolment rejection, full-category rejection, Organiser visibility into their event's enrolments
+
+Tests run against a real HTTP pipeline (via `WebApplicationFactory`) backed by an isolated EF Core in-memory database per test class, so they exercise the actual controllers, routing, and session middleware — not mocks.
+
+### CI/CD
+
+A second GitHub Actions workflow (`.github/workflows/build-and-test.yml`) runs on every push to `main`: it restores, builds the full solution, and runs all 22 unit tests. A failing test fails the build.
+
+**Successful build:**
+
+<!-- Paste your screenshot of the green Part 2 GitHub Actions build here, e.g.: -->
+<!-- ![Part 2 CI/CD Passing](docs/cicd-success-part2.png) -->
+
+### Video Walkthrough
+
+An unlisted YouTube video demonstrating the running API, explaining the code structure, endpoints, authentication, and unit tests:
+
+<!-- Paste your unlisted YouTube link here -->
+**[Video link here]**
