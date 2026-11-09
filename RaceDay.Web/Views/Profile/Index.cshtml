@@ -1,0 +1,52 @@
+@model ProfileViewModel
+@{ ViewData["Title"] = "My profile"; }
+
+<div class="rd-page-head"><h1 class="rd-h1">My profile</h1></div>
+
+<div class="row g-4">
+    <div class="col-md-5 col-lg-4">
+        <div class="card rd-card text-center">
+            <div class="card-body p-4">
+                @if (!string.IsNullOrEmpty(Model.ProfilePictureUrl))
+                {
+                    <img src="@Model.ProfilePictureUrl" alt="Your profile picture" class="rd-profile-pic" />
+                }
+                else
+                {
+                    <div class="rd-profile-pic rd-avatar-initials">@Fmt.Initials(Model.FullName)</div>
+                }
+                <h2 class="rd-h3 mt-3 mb-1">@Model.FullName</h2>
+                <span class="badge rd-role-badge rd-role-@Model.Role.ToLowerInvariant()">@Model.Role</span>
+                <p class="small text-secondary mt-2 mb-3">Member since @Fmt.ShortDate(Model.MemberSince)</p>
+
+                <form asp-action="UploadPicture" method="post" enctype="multipart/form-data" class="text-start">
+                    <label for="picture" class="form-label small">Profile picture (JPG, PNG, GIF or WEBP, max 5 MB)</label>
+                    <input type="file" name="picture" id="picture" class="form-control mb-2" accept="image/jpeg,image/png,image/gif,image/webp" data-preview="#picPreview" />
+                    <button type="submit" class="btn btn-rd-outline w-100"><i class="bi bi-upload"></i> Upload picture</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-7 col-lg-8">
+        <div class="card rd-card">
+            <div class="card-body p-4">
+                <h2 class="rd-h3">Your details</h2>
+                <form asp-action="Update" method="post" novalidate>
+                    <partial name="_FormErrors" />
+                    <div class="mb-3">
+                        <label asp-for="FullName" class="form-label"></label>
+                        <input asp-for="FullName" class="form-control" autocomplete="name" />
+                        <span asp-validation-for="FullName" class="rd-field-error"></span>
+                    </div>
+                    <div class="mb-4">
+                        <label asp-for="Email" class="form-label"></label>
+                        <input asp-for="Email" class="form-control" autocomplete="email" />
+                        <span asp-validation-for="Email" class="rd-field-error"></span>
+                    </div>
+                    <button type="submit" class="btn btn-rd-primary">Save changes</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
