@@ -1,0 +1,48 @@
+@model List<EventDto>
+@{ ViewData["Title"] = "My events"; }
+
+<div class="rd-page-head">
+    <h1 class="rd-h1">My events</h1>
+    <a asp-action="Create" class="btn btn-rd-primary"><i class="bi bi-plus-lg"></i> New event</a>
+</div>
+
+@if (Model.Count == 0)
+{
+    <div class="rd-empty">
+        <i class="bi bi-flag"></i>
+        <h2>No events yet</h2>
+        <p>Create an event, then add categories so people can enrol.</p>
+        <a asp-action="Create" class="btn btn-rd-primary">Create event</a>
+    </div>
+}
+else
+{
+    <div class="card rd-card"><div class="table-responsive">
+        <table class="table rd-table align-middle mb-0">
+            <thead><tr><th style="width:84px"></th><th>Event</th><th>Date</th><th>Type</th><th class="text-center">Categories</th><th class="text-center">Enrolled</th><th class="text-end">Actions</th></tr></thead>
+            <tbody>
+            @foreach (var e in Model)
+            {
+                <tr>
+                    <td><div class="rd-thumb"><partial name="_EventBanner" model="e" /></div></td>
+                    <td>
+                        <a asp-controller="Events" asp-action="Details" asp-route-id="@e.EventId" class="fw-semibold">@e.EventName</a>
+                        <div class="small text-secondary">@e.Location · @Fmt.Distance(e.Distance)</div>
+                    </td>
+                    <td>@Fmt.ShortDate(e.EventDate)@(e.EventDate < DateTime.Today ? "" : "")</td>
+                    <td><span class="rd-type-pill @Fmt.TypeClass(e.EventType) static"><i class="bi @Fmt.TypeIcon(e.EventType)"></i> @e.EventType</span></td>
+                    <td class="text-center">@e.CategoryCount</td>
+                    <td class="text-center">@e.EnrolmentCount</td>
+                    <td class="text-end text-nowrap">
+                        <a asp-controller="ManageCategories" asp-action="Index" asp-route-eventId="@e.EventId" class="btn btn-sm btn-rd-outline" title="Categories"><i class="bi bi-tags"></i></a>
+                        <a asp-action="Edit" asp-route-id="@e.EventId" class="btn btn-sm btn-rd-outline" title="Edit"><i class="bi bi-pencil"></i></a>
+                        <form asp-action="Delete" asp-route-id="@e.EventId" method="post" class="d-inline" data-confirm="Delete “@e.EventName”? This can't be undone.">
+                            <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete"><i class="bi bi-trash"></i></button>
+                        </form>
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div></div>
+}

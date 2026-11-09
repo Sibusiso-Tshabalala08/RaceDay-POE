@@ -1,0 +1,100 @@
+@model EventFormViewModel
+@{ ViewData["Title"] = Model.IsEdit ? "Edit event" : "New event"; }
+
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a asp-action="Index">Events</a></li>
+        <li class="breadcrumb-item active" aria-current="page">@(Model.IsEdit ? "Edit" : "New event")</li>
+    </ol>
+</nav>
+
+<div class="rd-page-head"><h1 class="rd-h1">@(Model.IsEdit ? "Edit event" : "Create an event")</h1></div>
+
+<form method="post" enctype="multipart/form-data" novalidate
+      asp-controller="ManageEvents" asp-action="@(Model.IsEdit ? "Edit" : "Create")" asp-route-id="@(Model.IsEdit ? Model.EventId : (int?)null)">
+    <partial name="_FormErrors" />
+    <div class="row g-4">
+        <div class="col-lg-8">
+            <div class="card rd-card"><div class="card-body p-4">
+                <div class="mb-3">
+                    <label asp-for="EventName" class="form-label"></label>
+                    <input asp-for="EventName" class="form-control" placeholder="e.g. Table Mountain Trail Run" />
+                    <span asp-validation-for="EventName" class="rd-field-error"></span>
+                </div>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label asp-for="EventDate" class="form-label"></label>
+                        <input asp-for="EventDate" type="datetime-local" class="form-control" value="@(Model.EventDate?.ToString("yyyy-MM-ddTHH:mm", System.Globalization.CultureInfo.InvariantCulture))" />
+                        <span asp-validation-for="EventDate" class="rd-field-error"></span>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label asp-for="EventType" class="form-label"></label>
+                        <select asp-for="EventType" class="form-select">
+                            <option value="Run">Run</option>
+                            <option value="Walk">Walk</option>
+                            <option value="Cycle">Cycle</option>
+                        </select>
+                        <span asp-validation-for="EventType" class="rd-field-error"></span>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-8 mb-3">
+                        <label asp-for="Location" class="form-label"></label>
+                        <input asp-for="Location" class="form-control" placeholder="e.g. Green Point Common, Cape Town" />
+                        <span asp-validation-for="Location" class="rd-field-error"></span>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label asp-for="Distance" class="form-label"></label>
+                        <input asp-for="Distance" type="number" step="0.1" min="0.1" class="form-control" />
+                        <span asp-validation-for="Distance" class="rd-field-error"></span>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label asp-for="Description" class="form-label"></label>
+                    <textarea asp-for="Description" rows="4" class="form-control" placeholder="Route, start-line info, what to bring…"></textarea>
+                    <span asp-validation-for="Description" class="rd-field-error"></span>
+                </div>
+                <details class="mb-1" @(Model.Latitude is not null ? "open" : null)>
+                    <summary class="small text-secondary">Add map coordinates to show live weather (optional)</summary>
+                    <div class="row mt-2">
+                        <div class="col-6">
+                            <label asp-for="Latitude" class="form-label"></label>
+                            <input asp-for="Latitude" type="number" step="any" class="form-control" placeholder="-33.9249" />
+                            <span asp-validation-for="Latitude" class="rd-field-error"></span>
+                        </div>
+                        <div class="col-6">
+                            <label asp-for="Longitude" class="form-label"></label>
+                            <input asp-for="Longitude" type="number" step="any" class="form-control" placeholder="18.4241" />
+                            <span asp-validation-for="Longitude" class="rd-field-error"></span>
+                        </div>
+                    </div>
+                </details>
+            </div></div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card rd-card"><div class="card-body p-4">
+                <h2 class="rd-h3">Banner image</h2>
+                <div class="rd-banner-preview mb-3" id="bannerPreviewBox">
+                    @if (!string.IsNullOrEmpty(Model.ExistingBannerUrl))
+                    {
+                        <img src="@Model.ExistingBannerUrl" alt="Current banner" id="bannerPreview" />
+                    }
+                    else
+                    {
+                        <img src="" alt="" id="bannerPreview" hidden />
+                        <div class="rd-banner-placeholder rd-type-other" id="bannerEmpty"><i class="bi bi-image"></i></div>
+                    }
+                </div>
+                <input asp-for="Banner" type="file" class="form-control" accept="image/jpeg,image/png,image/gif,image/webp" data-preview="#bannerPreview" data-preview-hide="#bannerEmpty" />
+                <div class="form-text">JPG, PNG, GIF or WEBP, up to 5 MB. Stored securely in the cloud.</div>
+                <span asp-validation-for="Banner" class="rd-field-error"></span>
+            </div></div>
+
+            <div class="d-grid gap-2 mt-3">
+                <button type="submit" class="btn btn-rd-primary btn-lg">@(Model.IsEdit ? "Save changes" : "Create event")</button>
+                <a asp-action="Index" class="btn btn-link">Cancel</a>
+            </div>
+        </div>
+    </div>
+</form>
