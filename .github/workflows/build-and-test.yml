@@ -1,0 +1,37 @@
+name: Build and Test API (Part 2)
+
+# Runs on every push/PR, building the full RaceDay solution and running
+# every test in RaceDay.Api.Tests. The brief requires this to pass both
+# locally and through CI — a green check mark here is what gets
+# screenshotted for the README per the rubric.
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build-and-test:
+    name: Build solution and run unit tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up .NET 8 SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Restore dependencies
+        run: dotnet restore RaceDay.sln
+
+      - name: Build solution
+        run: dotnet build RaceDay.sln --no-restore --configuration Release
+
+      - name: Run unit tests
+        run: dotnet test RaceDay.Api.Tests/RaceDay.Api.Tests.csproj --no-build --configuration Release --verbosity normal
+
+      - name: All checks passed
+        run: echo "SUCCESS - API builds and all unit tests pass."
