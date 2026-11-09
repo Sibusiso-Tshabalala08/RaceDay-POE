@@ -1,0 +1,61 @@
+@model ManageEnrolmentsViewModel
+@{ ViewData["Title"] = "Enrolments"; }
+
+<div class="rd-page-head"><h1 class="rd-h1">Enrolments</h1></div>
+
+@if (Model.Events.Count == 0)
+{
+    <div class="rd-empty"><i class="bi bi-people"></i><h2>No events yet</h2><p>Create an event first, then enrolments will appear here.</p>
+        <a asp-controller="ManageEvents" asp-action="Create" class="btn btn-rd-primary">Create event</a></div>
+}
+else
+{
+    <form method="get" asp-action="Index" class="rd-filter card rd-card">
+        <div class="card-body row g-3 align-items-end">
+            <div class="col-md-6">
+                <label class="form-label" for="eventId">Event</label>
+                <select id="eventId" name="eventId" class="form-select" data-autosubmit>
+                    @foreach (var e in Model.Events)
+                    {
+                        <option value="@e.EventId" selected="@(e.EventId == Model.Selected?.EventId)">@e.EventName · @Fmt.ShortDate(e.EventDate)</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label" for="status">Status</label>
+                <select id="status" name="status" class="form-select" data-autosubmit>
+                    <option value="">All</option>
+                    <option value="Confirmed" selected="@(Model.StatusFilter == "Confirmed")">Confirmed</option>
+                    <option value="Pending" selected="@(Model.StatusFilter == "Pending")">Pending</option>
+                    <option value="Cancelled" selected="@(Model.StatusFilter == "Cancelled")">Cancelled</option>
+                </select>
+            </div>
+            <div class="col-md-3"><button type="submit" class="btn btn-rd-primary">Apply</button></div>
+        </div>
+    </form>
+
+    @if (Model.Enrolments.Count == 0)
+    {
+        <div class="rd-empty rd-empty-sm"><i class="bi bi-person-x"></i><p class="mb-0">No enrolments@(string.IsNullOrEmpty(Model.StatusFilter) ? "" : " with that status") for this event yet.</p></div>
+    }
+    else
+    {
+        <div class="card rd-card"><div class="table-responsive">
+            <table class="table rd-table align-middle mb-0">
+                <thead><tr><th>Participant</th><th>Category</th><th>Enrolled on</th><th>Status</th></tr></thead>
+                <tbody>
+                @foreach (var e in Model.Enrolments)
+                {
+                    <tr>
+                        <td class="fw-semibold">@e.ParticipantName</td>
+                        <td>@e.CategoryName</td>
+                        <td>@Fmt.ShortDate(e.EnrolmentDate)</td>
+                        <td><partial name="_StatusBadge" model="e.Status" /></td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div></div>
+        <p class="text-secondary small mt-2">@Model.Enrolments.Count @(Model.Enrolments.Count == 1 ? "enrolment" : "enrolments") shown.</p>
+    }
+}
