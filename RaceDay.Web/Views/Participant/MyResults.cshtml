@@ -1,0 +1,55 @@
+@model List<ResultDto>
+@{ ViewData["Title"] = "My results"; }
+
+<div class="rd-page-head">
+    <h1 class="rd-h1">My results</h1>
+</div>
+
+@if (Model.Count == 0)
+{
+    <div class="rd-empty">
+        <i class="bi bi-trophy"></i>
+        <h2>No results yet</h2>
+        <p>Once an organiser records your finish, it will appear here with your time and position.</p>
+        <a asp-action="MyEvents" class="btn btn-rd-primary">See my events</a>
+    </div>
+}
+else
+{
+    var finished = Model.Where(r => r.Status == "Finished").ToList();
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3"><div class="rd-stat"><b>@Model.Count</b><span>Races recorded</span></div></div>
+        <div class="col-6 col-md-3"><div class="rd-stat"><b>@finished.Count</b><span>Finished</span></div></div>
+        <div class="col-6 col-md-3"><div class="rd-stat"><b>@(finished.Any(r => r.Position is not null) ? Fmt.Ordinal(finished.Where(r => r.Position is not null).Min(r => r.Position!.Value)) : "—")</b><span>Best position</span></div></div>
+        <div class="col-6 col-md-3"><div class="rd-stat"><b>@(finished.Any(r => r.FinishTime is not null) ? Fmt.Time(finished.Where(r => r.FinishTime is not null).Min(r => r.FinishTime)) : "—")</b><span>Fastest time</span></div></div>
+    </div>
+
+    <div class="card rd-card"><div class="table-responsive">
+        <table class="table rd-table align-middle mb-0">
+            <thead><tr><th>Event</th><th>Date</th><th>Category</th><th>Finish time</th><th>Position</th><th>Status</th></tr></thead>
+            <tbody>
+            @foreach (var r in Model)
+            {
+                <tr>
+                    <td class="fw-semibold">@r.EventName</td>
+                    <td>@(r.EventDate is { } d ? Fmt.Date(d) : "—")</td>
+                    <td>@r.CategoryName</td>
+                    <td class="rd-mono">@Fmt.Time(r.FinishTime)</td>
+                    <td>
+                        @if (r.Status == "Finished" && r.Position is { } pos)
+                        {
+                            <span class="rd-position">@Fmt.Ordinal(pos)</span>
+                            @if (r.TotalFinishers > 0)
+                            {
+                                <span class="text-secondary small"> out of @r.TotalFinishers finishers</span>
+                            }
+                        }
+                        else { <span class="text-secondary">—</span> }
+                    </td>
+                    <td><partial name="_StatusBadge" model="r.Status" /></td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div></div>
+}
