@@ -1,0 +1,14 @@
+@model EventDto
+<div class="card rd-card rd-event-card h-100">
+    <a asp-controller="Events" asp-action="Details" asp-route-id="@Model.EventId" class="rd-card-banner" tabindex="-1" aria-hidden="true">
+        <partial name="_EventBanner" model="Model" />
+        <span class="rd-type-pill @Fmt.TypeClass(Model.EventType)"><i class="bi @Fmt.TypeIcon(Model.EventType)"></i> @Model.EventType</span>
+    </a>
+    <div class="card-body d-flex flex-column">
+        <div class="rd-date"><i class="bi bi-calendar3"></i> @Fmt.DateTimeLong(Model.EventDate)</div>
+        <h3 class="rd-card-title"><a asp-controller="Events" asp-action="Details" asp-route-id="@Model.EventId">@Model.EventName</a></h3>
+        <div class="rd-meta"><i class="bi bi-geo-alt-fill"></i> @Model.Location</div>
+        <div class="rd-meta mb-3"><i class="bi bi-signpost-split"></i> @Fmt.Distance(Model.Distance)</div>
+        <a asp-controller="Events" asp-action="Details" asp-route-id="@Model.EventId" class="btn btn-rd-outline mt-auto">View event <i class="bi bi-arrow-right"></i></a>
+    </div>
+</div>

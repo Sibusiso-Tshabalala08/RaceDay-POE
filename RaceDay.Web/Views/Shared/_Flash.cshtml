@@ -1,0 +1,18 @@
+@{
+    (string Key, string Css, string Icon)[] kinds =
+    {
+        ("Success", "success", "bi-check-circle-fill"),
+        ("Error", "danger", "bi-exclamation-triangle-fill"),
+        ("Info", "info", "bi-info-circle-fill")
+    };
+}
+@foreach (var (key, css, icon) in kinds)
+{
+    if (TempData[key] is string message && message.Length > 0)
+    {
+        <div class="alert alert-@css alert-dismissible fade show rd-flash" role="alert">
+            <i class="bi @icon"></i> @message
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+}
