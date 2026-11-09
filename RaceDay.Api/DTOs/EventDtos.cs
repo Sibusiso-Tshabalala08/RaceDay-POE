@@ -29,5 +29,14 @@ public class EventResponseDto
     public decimal? Distance { get; set; }
     public string EventType { get; set; } = string.Empty;
     public string? RouteMapUrl { get; set; }
+    public string? BannerImageUrl { get; set; }
     public string? Description { get; set; }
+}
+
+/// <summary>An event plus the counts an Organiser dashboard needs.</summary>
+public class EventSummaryDto : EventResponseDto
+{
+    /// <summary>Enrolments that are not cancelled, across every category of the event.</summary>
+    public int EnrolmentCount { get; set; }
+    public int CategoryCount { get; set; }
 }
