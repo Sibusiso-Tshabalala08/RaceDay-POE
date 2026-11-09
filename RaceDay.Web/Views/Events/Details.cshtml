@@ -1,0 +1,119 @@
+@model EventDetailViewModel
+@{
+    ViewData["Title"] = Model.Event.EventName;
+    var user = Context.Session.GetUser();
+    var ev = Model.Event;
+}
+
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        @if (user is { IsOrganiser: true })
+        {
+            <li class="breadcrumb-item"><a asp-controller="ManageEvents" asp-action="Index">Events</a></li>
+        }
+        else
+        {
+            <li class="breadcrumb-item"><a asp-controller="Events" asp-action="Index">Find events</a></li>
+        }
+        <li class="breadcrumb-item active" aria-current="page">@ev.EventName</li>
+    </ol>
+</nav>
+
+<div class="rd-detail-banner"><partial name="_EventBanner" model="ev" /></div>
+
+<div class="row g-4 mt-1">
+    <div class="col-lg-8">
+        <span class="rd-type-pill @Fmt.TypeClass(ev.EventType) static"><i class="bi @Fmt.TypeIcon(ev.EventType)"></i> @ev.EventType</span>
+        @if (Model.IsPast) { <span class="rd-badge rd-badge-grey ms-1">Event finished</span> }
+        <h1 class="rd-h1 mt-2">@ev.EventName</h1>
+        <p class="text-secondary">Organised by @ev.OrganiserName</p>
+
+        @if (!string.IsNullOrWhiteSpace(ev.Description))
+        {
+            <p class="rd-description">@ev.Description</p>
+        }
+
+        <h2 class="rd-h2 mt-4">Choose a category</h2>
+        @if (Model.Categories.Count == 0)
+        {
+            <div class="rd-empty rd-empty-sm"><i class="bi bi-tags"></i><p class="mb-0">The organiser hasn't added categories yet, so enrolment isn't open.</p></div>
+        }
+        else
+        {
+            <div class="vstack gap-3">
+                @foreach (var c in Model.Categories)
+                {
+                    var enrolled = Model.EnrolledCategoryIds.Contains(c.CategoryId);
+                    <div class="card rd-card rd-category">
+                        <div class="card-body d-flex flex-wrap align-items-center gap-3">
+                            <div class="flex-grow-1">
+                                <h3 class="rd-card-title mb-1">@c.CategoryName</h3>
+                                <div class="rd-meta">
+                                    <span><i class="bi @(c.CategoryType == "Distance" ? "bi-signpost-split" : "bi-person-badge")"></i> @c.CategoryType · @c.Criteria</span>
+                                    <span><i class="bi bi-people"></i> up to @c.MaxParticipants</span>
+                                </div>
+                            </div>
+                            <div class="rd-price">@Fmt.Money(c.EntryFee)</div>
+                            @if (user is { IsParticipant: true })
+                            {
+                                if (enrolled)
+                                {
+                                    <span class="rd-badge rd-badge-green"><i class="bi bi-check-circle-fill"></i> You're enrolled</span>
+                                }
+                                else if (Model.IsPast)
+                                {
+                                    <span class="text-secondary small">Closed</span>
+                                }
+                                else
+                                {
+                                    <form asp-controller="Participant" asp-action="Enrol" method="post" class="m-0">
+                                        <input type="hidden" name="eventId" value="@ev.EventId" />
+                                        <input type="hidden" name="categoryId" value="@c.CategoryId" />
+                                        <button type="submit" class="btn btn-rd-primary">Enrol</button>
+                                    </form>
+                                }
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card rd-card rd-facts">
+            <div class="card-body">
+                <h2 class="rd-h3">Race details</h2>
+                <dl class="mb-0">
+                    <dt><i class="bi bi-calendar3"></i> When</dt><dd>@Fmt.DateTimeLong(ev.EventDate)</dd>
+                    <dt><i class="bi bi-geo-alt-fill"></i> Where</dt><dd>@ev.Location</dd>
+                    <dt><i class="bi bi-signpost-split"></i> Distance</dt><dd>@Fmt.Distance(ev.Distance)</dd>
+                </dl>
+            </div>
+        </div>
+
+        @if (Model.Weather is { } w)
+        {
+            <div class="card rd-card rd-weather mt-3">
+                <div class="card-body">
+                    <h2 class="rd-h3"><i class="bi bi-cloud-sun"></i> Live weather at the venue</h2>
+                    <div class="row text-center g-2">
+                        <div class="col-4"><div class="rd-stat-sm">@(w.Temperature?.ToString("0.#", System.Globalization.CultureInfo.InvariantCulture) ?? "—")°C</div><small>Temp</small></div>
+                        <div class="col-4"><div class="rd-stat-sm">@(w.WindSpeed?.ToString("0.#", System.Globalization.CultureInfo.InvariantCulture) ?? "—")</div><small>Wind km/h</small></div>
+                        <div class="col-4"><div class="rd-stat-sm">@(w.Precipitation?.ToString("0.#", System.Globalization.CultureInfo.InvariantCulture) ?? "—")</div><small>Rain mm</small></div>
+                    </div>
+                </div>
+            </div>
+        }
+
+        @if (user is { IsOrganiser: true } && ev.OrganiserId == user.UserId)
+        {
+            <div class="card rd-card mt-3">
+                <div class="card-body d-grid gap-2">
+                    <a asp-controller="ManageEvents" asp-action="Edit" asp-route-id="@ev.EventId" class="btn btn-rd-outline"><i class="bi bi-pencil"></i> Edit event</a>
+                    <a asp-controller="ManageCategories" asp-action="Index" asp-route-eventId="@ev.EventId" class="btn btn-rd-outline"><i class="bi bi-tags"></i> Manage categories</a>
+                </div>
+            </div>
+        }
+    </div>
+</div>
