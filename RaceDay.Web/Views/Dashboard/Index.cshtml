@@ -1,0 +1,93 @@
+@model DashboardViewModel
+@{ ViewData["Title"] = "Dashboard"; var user = Context.Session.GetUser(); }
+
+<div class="rd-page-head">
+    <div>
+        <h1 class="rd-h1">Organiser dashboard</h1>
+        <p class="text-secondary mb-0">Welcome back, @user?.FullName.Split(' ')[0]. Here's where your events stand.</p>
+    </div>
+    <a asp-controller="ManageEvents" asp-action="Create" class="btn btn-rd-primary"><i class="bi bi-plus-lg"></i> New event</a>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-6 col-lg-3"><div class="rd-stat rd-stat-accent"><b>@Model.TotalEvents</b><span>Total events</span></div></div>
+    <div class="col-6 col-lg-3"><div class="rd-stat"><b>@Model.UpcomingCount</b><span>Upcoming</span></div></div>
+    <div class="col-6 col-lg-3"><div class="rd-stat"><b>@Model.TotalEnrolments</b><span>Active enrolments</span></div></div>
+    <div class="col-6 col-lg-3">
+        <div class="rd-stat">
+            @if (Model.NextEvent is { } next)
+            {
+                var days = (next.EventDate.Date - DateTime.Today).Days;
+                <b>@(days <= 0 ? "Today" : days + (days == 1 ? " day" : " days"))</b><span>Until @next.EventName</span>
+            }
+            else
+            {
+                <b>—</b><span>No upcoming event</span>
+            }
+        </div>
+    </div>
+</div>
+
+@if (Model.TotalEvents == 0)
+{
+    <div class="rd-empty">
+        <i class="bi bi-flag"></i>
+        <h2>Create your first event</h2>
+        <p>Add an event, give it categories, and participants can start enrolling.</p>
+        <a asp-controller="ManageEvents" asp-action="Create" class="btn btn-rd-primary">Create event</a>
+    </div>
+}
+else
+{
+    <div class="row g-4">
+        <div class="col-lg-7">
+            <div class="card rd-card h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h2 class="rd-h3 mb-0">Enrolments per event</h2>
+                        <a asp-controller="ManageEnrolments" asp-action="Index" class="small">View all <i class="bi bi-arrow-right"></i></a>
+                    </div>
+                    @foreach (var e in Model.Events.OrderByDescending(x => x.EnrolmentCount).ThenBy(x => x.EventDate))
+                    {
+                        var pct = Model.MaxEnrolments == 0 ? 0 : (int)Math.Round(100.0 * e.EnrolmentCount / Model.MaxEnrolments);
+                        <div class="rd-bar-row">
+                            <div class="d-flex justify-content-between">
+                                <a asp-controller="ManageEnrolments" asp-action="Index" asp-route-eventId="@e.EventId" class="rd-bar-label">@e.EventName</a>
+                                <span class="rd-bar-count">@e.EnrolmentCount</span>
+                            </div>
+                            <div class="progress rd-bar" role="progressbar" aria-label="Enrolments for @e.EventName" aria-valuenow="@e.EnrolmentCount" aria-valuemin="0" aria-valuemax="@Model.MaxEnrolments">
+                                <div class="progress-bar" style="width:@(pct)%"></div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-5">
+            <div class="card rd-card h-100">
+                <div class="card-body">
+                    <h2 class="rd-h3">Upcoming dates</h2>
+                    @if (Model.Upcoming.Count == 0)
+                    {
+                        <p class="text-secondary mb-0">No upcoming events. Time to plan the next one!</p>
+                    }
+                    else
+                    {
+                        <ul class="rd-timeline list-unstyled mb-0">
+                            @foreach (var e in Model.Upcoming.Take(6))
+                            {
+                                <li>
+                                    <div class="rd-cal"><b>@e.EventDate.Day</b><span>@e.EventDate.ToString("MMM", System.Globalization.CultureInfo.InvariantCulture)</span></div>
+                                    <div>
+                                        <a asp-controller="ManageEvents" asp-action="Edit" asp-route-id="@e.EventId" class="fw-semibold">@e.EventName</a>
+                                        <div class="small text-secondary">@e.Location · @e.EnrolmentCount enrolled · @e.CategoryCount @(e.CategoryCount == 1 ? "category" : "categories")</div>
+                                    </div>
+                                </li>
+                            }
+                        </ul>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+}
