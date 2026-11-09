@@ -1,0 +1,30 @@
+# Build output
+bin/
+obj/
+publish/
+[Dd]ebug/
+[Rr]elease/
+
+# IDE / editor
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+*.userprefs
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Secrets - NEVER commit these (use `dotnet user-secrets` or environment variables)
+.env
+*.env
+secrets.json
+appsettings.Local.json
+appsettings.Secrets.json
+
+# Test output
+TestResults/
+*.trx
+coverage/
