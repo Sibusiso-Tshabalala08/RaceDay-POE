@@ -26,6 +26,8 @@ public class EnrolmentsController : ControllerBase
         CategoryName = e.Category?.CategoryName ?? string.Empty,
         EventId = e.Category?.EventId ?? 0,
         EventName = e.Category?.Event?.EventName ?? string.Empty,
+        EventDate = e.Category?.Event?.EventDate,
+        EventLocation = e.Category?.Event?.Location ?? string.Empty,
         EnrolmentDate = e.EnrolmentDate,
         Status = e.Status
     };
