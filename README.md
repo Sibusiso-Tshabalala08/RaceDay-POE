@@ -202,6 +202,17 @@ Browser ──► RaceDay.Web (MVC, Docker, :8080) ──HTTP + session cookie�
 
 If no connection string is set, uploads fail politely ("image storage isn't configured") and the rest of the site keeps working.
 
+### 1b. No Azure account? Use the Azurite emulator
+
+Azurite is Microsoft's official emulator for Azure Blob Storage. I used it during development. The API uses the same Azure SDK (`Azure.Storage.Blobs`) either way, and only the connection string differs.
+
+```
+docker run -d --name azurite -p 10000:10000 mcr.microsoft.com/azure-storage/azurite azurite-blob --blobHost 0.0.0.0 --skipApiVersionCheck
+dotnet user-secrets set "AzureStorage:ConnectionString" "UseDevelopmentStorage=true" --project RaceDay.Api
+```
+
+Images are then served from `http://127.0.0.1:10000/devstoreaccount1/raceday-images/...`. To switch to a real Azure account, replace the secret with that account's connection string (step 1 above). No code changes are needed.
+
 ### 2. Run the API
 
 ```
