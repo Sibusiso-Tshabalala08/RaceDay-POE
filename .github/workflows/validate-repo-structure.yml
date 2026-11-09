@@ -1,62 +1,87 @@
 name: Validate Repo Structure
 
-# Runs automatically whenever code is pushed, or a pull request is opened,
-# against the main branch. This gives you an automatic pass/fail check
-# every time you commit, without doing anything manually.
+# Checks that the repository has every file the POE asks for in Parts 1, 2 and 3.
+# Runs on every push and pull request to main and to any part-3 branch.
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "main", "part-3*" ]
   pull_request:
     branches: [ "main" ]
 
 jobs:
-  check-docs-structure:
-    name: Check /docs folder and required Part 1 files
+  check-structure:
+    name: Check required files for Parts 1 to 3
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Verify /docs folder exists
+      - name: Verify Part 1 documents in /docs
         run: |
-          if [ ! -d "docs" ]; then
-            echo "ERROR: /docs folder is missing."
-            exit 1
-          fi
-          echo "OK: /docs folder found."
+          missing=0
+          [ -d docs ] || { echo "ERROR - /docs folder is missing."; exit 1; }
+          if [ ! -f docs/RaceDay_ERD.png ] && [ ! -f docs/RaceDay_ERD.pdf ]; then echo "ERROR - ERD file is missing from /docs."; missing=1; fi
+          if [ ! -f docs/RaceDay_API_Endpoint_Plan.md ] && [ ! -f docs/RaceDay_API_Endpoint_Plan.pdf ]; then echo "ERROR - API Endpoint Plan is missing from /docs."; missing=1; fi
+          [ -f docs/RaceDay_Database.sql ] || { echo "ERROR - SQL script is missing from /docs."; missing=1; }
+          [ "$missing" -eq 0 ] || exit 1
+          echo "OK - Part 1 documents found."
 
-      - name: Verify ERD file exists
+      - name: Verify Part 2 API project
         run: |
-          if [ ! -f "docs/RaceDay_ERD.png" ] && [ ! -f "docs/RaceDay_ERD.pdf" ]; then
-            echo "ERROR: ERD file (RaceDay_ERD.png or .pdf) is missing from /docs."
-            exit 1
-          fi
-          echo "OK: ERD file found."
+          missing=0
+          for f in RaceDay.sln RaceDay.Api/RaceDay.Api.csproj RaceDay.Api/Program.cs RaceDay.Api.Tests/RaceDay.Api.Tests.csproj; do
+            [ -f "$f" ] || { echo "ERROR - $f is missing."; missing=1; }
+          done
+          [ -d RaceDay.Api/Controllers ] || { echo "ERROR - RaceDay.Api/Controllers is missing."; missing=1; }
+          [ "$missing" -eq 0 ] || exit 1
+          echo "OK - Part 2 API and tests found."
 
-      - name: Verify API Endpoint Plan exists
+      - name: Verify Part 3 MVC project and Docker files
         run: |
-          if [ ! -f "docs/RaceDay_API_Endpoint_Plan.md" ] && [ ! -f "docs/RaceDay_API_Endpoint_Plan.pdf" ]; then
-            echo "ERROR: API Endpoint Plan (RaceDay_API_Endpoint_Plan.md or .pdf) is missing from /docs."
-            exit 1
-          fi
-          echo "OK: API Endpoint Plan found."
+          missing=0
+          for f in RaceDay.Web/RaceDay.Web.csproj RaceDay.Web/Program.cs RaceDay.Web/Dockerfile; do
+            [ -f "$f" ] || { echo "ERROR - $f is missing."; missing=1; }
+          done
+          for d in RaceDay.Web/Controllers RaceDay.Web/Views RaceDay.Web/Models; do
+            [ -d "$d" ] || { echo "ERROR - $d folder is missing."; missing=1; }
+          done
+          [ "$missing" -eq 0 ] || exit 1
+          echo "OK - Part 3 MVC project and Dockerfile found."
 
-      - name: Verify SQL script exists
+      - name: Verify the MVC project has no direct database or Azure access
         run: |
-          if [ ! -f "docs/RaceDay_Database.sql" ]; then
-            echo "ERROR: SQL script (RaceDay_Database.sql) is missing from /docs."
+          if grep -Eq "EntityFramework|Azure\.Storage|SqlClient" RaceDay.Web/RaceDay.Web.csproj; then
+            echo "ERROR - RaceDay.Web must not reference a database or Azure package. It may only call the API."
             exit 1
           fi
-          echo "OK: SQL script found."
+          echo "OK - MVC project only talks to the API."
 
-      - name: Verify README exists
+      - name: Verify the solution includes the MVC project
         run: |
-          if [ ! -f "README.md" ]; then
-            echo "ERROR: README.md is missing from the repository root."
+          grep -q "RaceDay.Web" RaceDay.sln || { echo "ERROR - RaceDay.Web is not in RaceDay.sln, so CI would not build it."; exit 1; }
+          echo "OK - RaceDay.Web is part of the solution."
+
+      - name: Verify README and its Part 3 sections
+        run: |
+          [ -f README.md ] || { echo "ERROR - README.md is missing."; exit 1; }
+          missing=0
+          grep -qi "docker run" README.md || { echo "ERROR - README has no 'docker run' instructions."; missing=1; }
+          [ "$missing" -eq 0 ] || exit 1
+          echo "OK - README has Docker run instructions."
+          if grep -qi "youtu" README.md; then
+            echo "OK - README has a YouTube video link."
+          else
+            echo "::warning::README has no YouTube video link yet. Add the unlisted link before submitting."
+          fi
+
+      - name: Verify no secrets are committed
+        run: |
+          if grep -rEIl "AccountKey=[A-Za-z0-9+/=]{20,}" --exclude-dir=.git --exclude-dir=.github . ; then
+            echo "ERROR - an Azure storage key appears to be committed. Remove it and rotate the key."
             exit 1
           fi
-          echo "OK: README.md found."
+          echo "OK - no storage keys found."
 
       - name: All required files present
-        run: echo "SUCCESS - Repository structure meets Part 1 requirements."
+        run: echo "SUCCESS - repository structure meets the Part 1, 2 and 3 requirements."
