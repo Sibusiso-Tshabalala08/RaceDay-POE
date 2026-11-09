@@ -253,6 +253,7 @@ docker compose up --build
 
 <!-- Paste your screenshot of the green Part 3 GitHub Actions run here, e.g.: -->
 <!-- ![Part 3 CI/CD Passing](docs/cicd-success-part3.png) -->
+![Part 3 CI/CD Passing](docs/cicd-success-part3.png)
 
 ### Part 3 Video Walkthrough
 
