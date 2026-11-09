@@ -1,0 +1,14 @@
+@{ ViewData["Title"] = "Access denied"; var user = Context.Session.GetUser(); }
+<div class="rd-empty text-center">
+    <i class="bi bi-shield-lock"></i>
+    <h1>This area isn't for your account</h1>
+    <p>You're signed in as @(user?.Role ?? "a guest"), and that page belongs to the other side of RaceDay.</p>
+    @if (user is not null)
+    {
+        <a asp-controller="@(user.IsOrganiser ? "Dashboard" : "Events")" asp-action="Index" class="btn btn-rd-primary">Take me to my home</a>
+    }
+    else
+    {
+        <a asp-controller="Account" asp-action="Login" class="btn btn-rd-primary">Log in</a>
+    }
+</div>

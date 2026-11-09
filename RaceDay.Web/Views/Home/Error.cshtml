@@ -1,0 +1,9 @@
+@model ErrorViewModel
+@{ ViewData["Title"] = Model.Title; }
+<div class="rd-empty text-center">
+    <i class="bi bi-cone-striped"></i>
+    @if (Model.StatusCode is int code && code != 500) { <div class="rd-big-code">@code</div> }
+    <h1>@Model.Title</h1>
+    <p>@Model.Message</p>
+    <a asp-controller="Home" asp-action="Index" class="btn btn-rd-primary">Back to home</a>
+</div>

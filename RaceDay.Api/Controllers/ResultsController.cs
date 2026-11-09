@@ -23,6 +23,9 @@ public class ResultsController : ControllerBase
     {
         ResultId = r.ResultId,
         EnrolmentId = r.EnrolmentId,
+        EventId = r.Enrolment?.Category?.EventId ?? 0,
+        EventName = r.Enrolment?.Category?.Event?.EventName ?? string.Empty,
+        EventDate = r.Enrolment?.Category?.Event?.EventDate,
         ParticipantName = r.Enrolment?.Participant?.FullName ?? string.Empty,
         CategoryName = r.Enrolment?.Category?.CategoryName ?? string.Empty,
         FinishTime = r.FinishTime,
@@ -100,7 +103,7 @@ public class ResultsController : ControllerBase
     }
 
     /// <summary>Returns the logged-in Participant's personal performance history across all events.</summary>
-    /// <remarks>Participant only. Returns 200 with an array of results.</remarks>
+    /// <remarks>Participant only. Returns 200 with an array of results (newest event first). Each result includes the event name and date, and totalFinishers, the number of people who finished that event.</remarks>
     [HttpGet("api/users/me/results")]
     [RequireSession("Participant")]
     public async Task<IActionResult> GetMyResults()
@@ -109,11 +112,32 @@ public class ResultsController : ControllerBase
 
         var results = await _context.Results
             .Include(r => r.Enrolment).ThenInclude(e => e!.Participant)
-            .Include(r => r.Enrolment).ThenInclude(e => e!.Category)
+            .Include(r => r.Enrolment).ThenInclude(e => e!.Category).ThenInclude(c => c!.Event)
             .Where(r => r.Enrolment!.ParticipantId == participantId)
             .ToListAsync();
 
-        return Ok(results.Select(ToDto));
+        // How many people finished each of these events, so a position can be
+        // shown as "47th out of 312 finishers".
+        var eventIds = results.Select(r => r.Enrolment!.Category!.EventId).Distinct().ToList();
+        var finisherEventIds = await _context.Results
+            .Where(r => r.Status == "Finished" && eventIds.Contains(r.Enrolment!.Category!.EventId))
+            .Select(r => r.Enrolment!.Category!.EventId)
+            .ToListAsync();
+        var finishersByEvent = finisherEventIds
+            .GroupBy(id => id)
+            .ToDictionary(g => g.Key, g => g.Count());
+
+        var dtos = results
+            .OrderByDescending(r => r.Enrolment!.Category!.Event!.EventDate)
+            .Select(r =>
+            {
+                var dto = ToDto(r);
+                dto.TotalFinishers = finishersByEvent.GetValueOrDefault(dto.EventId);
+                return dto;
+            })
+            .ToList();
+
+        return Ok(dtos);
     }
 
     /// <summary>Returns the full results/leaderboard for an event.</summary>

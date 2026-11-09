@@ -1,0 +1,13 @@
+@* Shows the event's banner (stored in Azure Blob Storage, URL saved by the API),
+   or a coloured placeholder when none has been uploaded. *@
+@model EventDto
+@if (!string.IsNullOrEmpty(Model.BannerImageUrl))
+{
+    <img src="@Model.BannerImageUrl" alt="Banner for @Model.EventName" class="rd-banner-img" loading="lazy" />
+}
+else
+{
+    <div class="rd-banner-placeholder @Fmt.TypeClass(Model.EventType)" role="img" aria-label="@Model.EventType event">
+        <i class="bi @Fmt.TypeIcon(Model.EventType)"></i>
+    </div>
+}

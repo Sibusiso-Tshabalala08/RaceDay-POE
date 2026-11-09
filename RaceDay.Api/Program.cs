@@ -23,6 +23,13 @@ builder.Services.AddSession(options =>
 // ---------------- HttpClient for the weather service ----------------
 builder.Services.AddHttpClient<IWeatherService, WeatherService>();
 
+// ---------------- Azure Blob Storage (Part 3) ----------------
+// Event banners and profile pictures are uploaded to the API, which stores
+// them in Azure Blob Storage. The MVC app never talks to Azure directly.
+// Configure with AzureStorage:ConnectionString (user-secrets / environment
+// variable, never committed) and optionally AzureStorage:ContainerName.
+builder.Services.AddSingleton<IBlobStorageService, BlobStorageService>();
+
 // ---------------- Controllers ----------------
 builder.Services.AddControllers();
 
@@ -74,7 +81,11 @@ app.UseSwaggerUI(options =>
     options.SwaggerEndpoint("/swagger/v1/swagger.json", "RaceDay API v1");
 });
 
-app.UseHttpsRedirection();
+// The MVC app (and its Docker container) calls this API over plain HTTP on
+// localhost, so the HTTPS redirect is only applied outside Development;
+// otherwise a 307 to the https dev certificate would break those calls.
+if (!app.Environment.IsDevelopment())
+    app.UseHttpsRedirection();
 
 // Session middleware must run before controllers that read HttpContext.Session.
 app.UseSession();

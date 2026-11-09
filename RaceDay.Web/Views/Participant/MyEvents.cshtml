@@ -1,0 +1,75 @@
+@model MyEventsViewModel
+@{ ViewData["Title"] = "My events"; }
+
+<div class="rd-page-head">
+    <h1 class="rd-h1">My events</h1>
+    <a asp-controller="Events" asp-action="Index" class="btn btn-rd-primary"><i class="bi bi-plus-lg"></i> Find more events</a>
+</div>
+
+@if (Model.Upcoming.Count == 0 && Model.Past.Count == 0)
+{
+    <div class="rd-empty">
+        <i class="bi bi-ticket-perforated"></i>
+        <h2>You haven't entered anything yet</h2>
+        <p>Find a race that suits you and enrol in a category.</p>
+        <a asp-controller="Events" asp-action="Index" class="btn btn-rd-primary">Browse events</a>
+    </div>
+}
+else
+{
+    <h2 class="rd-h2">Upcoming</h2>
+    @if (Model.Upcoming.Count == 0)
+    {
+        <p class="text-secondary">Nothing coming up.</p>
+    }
+    else
+    {
+        <div class="card rd-card"><div class="table-responsive">
+            <table class="table rd-table align-middle mb-0">
+                <thead><tr><th>Event</th><th>Date</th><th>Category</th><th>Status</th><th></th></tr></thead>
+                <tbody>
+                @foreach (var e in Model.Upcoming)
+                {
+                    <tr>
+                        <td><a asp-controller="Events" asp-action="Details" asp-route-id="@e.EventId" class="fw-semibold">@e.EventName</a><div class="small text-secondary">@e.EventLocation</div></td>
+                        <td>@(e.EventDate is { } d ? Fmt.DateTimeLong(d) : "—")</td>
+                        <td>@e.CategoryName</td>
+                        <td><partial name="_StatusBadge" model="e.Status" /></td>
+                        <td class="text-end">
+                            @if (e.Status != "Cancelled")
+                            {
+                                <form asp-action="Cancel" method="post" class="m-0" data-confirm="Cancel your enrolment in @e.EventName?">
+                                    <input type="hidden" name="enrolmentId" value="@e.EnrolmentId" />
+                                    <button type="submit" class="btn btn-sm btn-outline-danger">Cancel</button>
+                                </form>
+                            }
+                        </td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div></div>
+    }
+
+    @if (Model.Past.Count > 0)
+    {
+        <h2 class="rd-h2 mt-5">Past</h2>
+        <div class="card rd-card"><div class="table-responsive">
+            <table class="table rd-table align-middle mb-0">
+                <thead><tr><th>Event</th><th>Date</th><th>Category</th><th>Status</th></tr></thead>
+                <tbody>
+                @foreach (var e in Model.Past)
+                {
+                    <tr>
+                        <td><a asp-controller="Events" asp-action="Details" asp-route-id="@e.EventId">@e.EventName</a></td>
+                        <td>@(e.EventDate is { } d ? Fmt.Date(d) : "—")</td>
+                        <td>@e.CategoryName</td>
+                        <td><partial name="_StatusBadge" model="e.Status" /></td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div></div>
+        <p class="mt-3"><a asp-action="MyResults">See your results <i class="bi bi-arrow-right"></i></a></p>
+    }
+}

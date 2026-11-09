@@ -1,0 +1,75 @@
+@model ManageResultsViewModel
+@{ ViewData["Title"] = "Results"; }
+
+<div class="rd-page-head"><h1 class="rd-h1">Record results</h1></div>
+
+@if (Model.Events.Count == 0)
+{
+    <div class="rd-empty"><i class="bi bi-stopwatch"></i><h2>No events yet</h2><p>Results can be recorded once you have an event with enrolments.</p>
+        <a asp-controller="ManageEvents" asp-action="Create" class="btn btn-rd-primary">Create event</a></div>
+}
+else
+{
+    <form method="get" asp-action="Index" class="rd-filter card rd-card">
+        <div class="card-body row g-3 align-items-end">
+            <div class="col-md-8">
+                <label class="form-label" for="eventId">Event</label>
+                <select id="eventId" name="eventId" class="form-select" data-autosubmit>
+                    @foreach (var e in Model.Events)
+                    {
+                        <option value="@e.EventId" selected="@(e.EventId == Model.Selected?.EventId)">@e.EventName · @Fmt.ShortDate(e.EventDate)</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-4"><button type="submit" class="btn btn-rd-primary">Show</button></div>
+        </div>
+    </form>
+
+    @if (Model.Rows.Count == 0)
+    {
+        <div class="rd-empty rd-empty-sm"><i class="bi bi-person-x"></i><p class="mb-0">Nobody is enrolled in this event, so there are no results to record.</p></div>
+    }
+    else
+    {
+        <p class="text-secondary small">Enter each participant's finish time as <code>hh:mm:ss</code> and their finishing position, then press save. DNF / DNS / DQ don't need a time.</p>
+        <div class="card rd-card"><div class="table-responsive">
+            <table class="table rd-table align-middle mb-0">
+                <thead><tr><th>Participant</th><th>Category</th><th style="width:150px">Finish time</th><th style="width:110px">Position</th><th style="width:140px">Status</th><th></th></tr></thead>
+                <tbody>
+                @foreach (var row in Model.Rows)
+                {
+                    var formId = "res" + row.Enrolment.EnrolmentId;
+                    var r = row.Result;
+                    <tr>
+                        <td class="fw-semibold">@row.Enrolment.ParticipantName</td>
+                        <td>@row.Enrolment.CategoryName</td>
+                        <td>
+                            <input form="@formId" name="FinishTime" class="form-control form-control-sm rd-mono" placeholder="00:00:00" value="@(r?.FinishTime is { } ft ? Fmt.Time(ft) : "")" aria-label="Finish time for @row.Enrolment.ParticipantName" />
+                        </td>
+                        <td>
+                            <input form="@formId" name="Position" type="number" min="1" class="form-control form-control-sm" value="@r?.Position" aria-label="Position for @row.Enrolment.ParticipantName" />
+                        </td>
+                        <td>
+                            <select form="@formId" name="Status" class="form-select form-select-sm" aria-label="Status for @row.Enrolment.ParticipantName">
+                                @foreach (var s in new[] { "Finished", "DNF", "DNS", "DQ" })
+                                {
+                                    <option value="@s" selected="@((r?.Status ?? "Finished") == s)">@s</option>
+                                }
+                            </select>
+                        </td>
+                        <td class="text-end text-nowrap">
+                            @if (r is not null) { <span class="me-2"><partial name="_StatusBadge" model="r.Status" /></span> }
+                            <button type="submit" form="@formId" class="btn btn-sm btn-rd-primary">@(r is null ? "Save" : "Update")</button>
+                            <form id="@formId" asp-action="Save" method="post" class="d-none">
+                                <input type="hidden" name="EnrolmentId" value="@row.Enrolment.EnrolmentId" />
+                                <input type="hidden" name="ResultId" value="@(r?.ResultId ?? 0)" />
+                                <input type="hidden" name="EventId" value="@Model.Selected!.EventId" />
+                            </form>
+                        </td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div></div>
+    }
+}

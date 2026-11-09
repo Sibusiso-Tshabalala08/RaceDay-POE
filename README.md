@@ -6,7 +6,7 @@ RaceDay is a full-stack, web-based event management system built for South Afric
 
 The platform allows **Event Organisers** to create and manage events, define entry categories, and capture participant results. **Participants** can browse upcoming events, enter events by selecting a category, track their personal performance history, and prepare for race day using live weather and route information.
 
-This repository contains **Part 1** of the RaceDay Portfolio of Evidence: system planning, including the database design (ERD), the API endpoint plan, and the SQL database script. No application code is written in this part — Parts 2 (RESTful API) and 3 (MVC web application) build on top of this foundation.
+This repository contains all three parts of the RaceDay Portfolio of Evidence: **Part 1** system planning (ERD, API endpoint plan, SQL script), **Part 2** the RESTful API, and **Part 3** the MVC web application with Azure Blob Storage and Docker. Each part builds on the one before it; scroll down to the part you want.
 
 ## User Roles
 
@@ -20,13 +20,16 @@ Role-based access will be enforced at the API level in Part 2 and reflected cons
 ## Repository Structure
 
 ```
-├── .github/
-│   └── workflows/
-│       └── validate-repo-structure.yml   # CI/CD: validates required files exist
-├── docs/
-│   ├── RaceDay_ERD.png                   # Entity Relationship Diagram
-│   ├── RaceDay_API_Endpoint_Plan.md      # Full API endpoint plan
-│   └── RaceDay_Database.sql              # Database creation + seed script
+├── .github/workflows/
+│   ├── validate-repo-structure.yml   # CI: checks required files for Parts 1-3
+│   └── build-and-test.yml            # CI: builds API + MVC, runs tests, builds the Docker image
+├── docs/                             # Part 1 planning documents, video scripts, CI screenshot
+├── RaceDay.Api/                      # Part 2 + 3: ASP.NET Core Web API (also talks to Azure Blob Storage)
+├── RaceDay.Api.Tests/                # xUnit tests for the API
+├── RaceDay.Web/                      # Part 3: ASP.NET Core MVC web app (talks ONLY to the API)
+│   └── Dockerfile
+├── docker-compose.yml
+├── RaceDay.sln
 └── README.md
 ```
 
@@ -66,7 +69,7 @@ No additional setup (no application code, no dependencies) is required for Part 
 
 ## CI/CD
 
-A GitHub Actions workflow (`.github/workflows/validate-repo-structure.yml`) runs automatically on every push to `main`. It validates that the `/docs` folder exists and contains the ERD, API endpoint plan, and SQL script, and that a README is present.
+A GitHub Actions workflow (`.github/workflows/validate-repo-structure.yml`) runs automatically on every push to `main` (and on `part-3*` branches). It validates that the `/docs` folder exists and contains the ERD, API endpoint plan, and SQL script, that a README is present, and (from Part 3) that the MVC project and Dockerfile exist.
 
 **Successful build:**
 
@@ -83,29 +86,6 @@ An unlisted YouTube video walking through the planning documents, ERD design dec
 ---
 
 ## Part 2 — RESTful API
-
-### Repository Structure (updated)
-
-```
-├── .github/
-│   └── workflows/
-│       ├── validate-repo-structure.yml   # Part 1 CI: validates /docs files
-│       └── build-and-test.yml            # Part 2 CI: builds API + runs unit tests
-├── docs/
-│   ├── RaceDay_ERD.png
-│   ├── RaceDay_API_Endpoint_Plan.md
-│   └── RaceDay_Database.sql
-├── RaceDay.Api/                          # ASP.NET Core Web API (Part 2)
-│   ├── Controllers/                      # Auth, Users, Events, Categories, Enrolments, Results
-│   ├── Models/                           # EF Core entities (match the Part 1 ERD exactly)
-│   ├── Data/                             # DbContext, Code-First configuration, seed data
-│   ├── DTOs/                             # Request/response shapes per the Part 1 endpoint plan
-│   ├── Auth/                             # Session-based authentication + role enforcement
-│   └── Services/                         # Weather service (Open-Meteo integration)
-├── RaceDay.Api.Tests/                    # xUnit test project
-├── RaceDay.sln
-└── README.md
-```
 
 ### What Part 2 Implements
 
@@ -155,7 +135,7 @@ A RESTful API built with ASP.NET Core Web API (C#), following the endpoint plan 
 dotnet test RaceDay.Api.Tests/RaceDay.Api.Tests.csproj
 ```
 
-22 tests across 4 test classes, covering both expected success and expected failure scenarios for every required area from the Part 2 brief:
+23 tests across 4 test classes, covering both expected success and expected failure scenarios for every required area from the Part 2 brief:
 - `AuthTests` — registration and login (valid/invalid roles, duplicate email, wrong password, protected routes without a session)
 - `EventManagementTests` — Organiser create/update/delete, ownership enforcement, invalid event types
 - `RoleEnforcementTests` — Participants rejected from Organiser-only actions and vice versa, anonymous requests rejected
@@ -165,7 +145,7 @@ Tests run against a real HTTP pipeline (via `WebApplicationFactory`) backed by a
 
 ### CI/CD
 
-A second GitHub Actions workflow (`.github/workflows/build-and-test.yml`) runs on every push to `main`: it restores, builds the full solution, and runs all 22 unit tests. A failing test fails the build.
+A second GitHub Actions workflow (`.github/workflows/build-and-test.yml`) runs on every push to `main`: it restores, builds the full solution, and runs all unit tests. A failing test fails the build.
 
 **Successful build:**
 
@@ -178,3 +158,104 @@ An unlisted YouTube video demonstrating the running API, explaining the code str
 
 <!-- Paste your unlisted YouTube link here -->
 **[Video link here]**
+
+---
+
+## Part 3 — MVC Web Application, Azure Blob Storage and Docker
+
+Part 3 adds `RaceDay.Web`, an ASP.NET Core MVC app that gives Organisers and Participants a RaceDay-branded website. **It contains no database code and no business rules:** every read and write goes through the Part 2 REST API with a typed `HttpClient` (`RaceDay.Web/Services/ApiClient.cs`). Images are uploaded to the **API**, which stores them in **Azure Blob Storage** and saves the URL in the database. The MVC app never talks to Azure.
+
+```
+Browser ──► RaceDay.Web (MVC, Docker, :8080) ──HTTP + session cookie──► RaceDay.Api (:5000) ──► SQL Server
+                                                                                  └──────────► Azure Blob Storage
+```
+
+### Features
+
+| Area | What you get |
+|---|---|
+| **Sign-up / login** | Register as Organiser or Participant; login calls the API. The MVC session remembers the user's id, role and the API session cookie. Logout ends both sessions. |
+| **Role-based navigation** | Organisers see Dashboard / Events / Enrolments / Results. Participants see Find events / My events / My results. Visiting a page for the other role shows an "access denied" page; visiting any page while logged out redirects to login and returns you afterwards. |
+| **Organiser** | Dashboard (totals, enrolments per event, upcoming dates) · create / edit / delete events with banner upload · age and distance categories · enrolments per event · enter finish time, position and status per participant. |
+| **Participant** | Home with upcoming events and filters (search, type, distance) · event detail with categories and live weather · enrol in a category · My events with colour-coded status · My results (e.g. "47th out of 312 finishers") · profile with picture upload. |
+| **Azure Blob Storage** | Event banners and profile pictures are validated (type, size, real image bytes) and uploaded by the API; the blob URL is stored on the `Events` / `Users` row and shown in the MVC pages. |
+| **Docker** | Multi-stage `Dockerfile`; the container behaves exactly like a local run. |
+| **UI** | Bootstrap 5 + a custom RaceDay theme. Statuses are colour-coded: green = Confirmed / Finished, amber = Pending / DNF, red = Cancelled / DQ. Invalid input is explained next to the field; API or server problems show a friendly page, never a stack trace. |
+
+### Prerequisites
+
+- .NET 8 SDK, SQL Server / LocalDB, `dotnet-ef` (`dotnet tool install --global dotnet-ef`)
+- Docker Desktop (for the container)
+- An Azure Storage account (only needed for image uploads — everything else works without it)
+
+### 1. Set up Azure Blob Storage (one-off)
+
+1. In the [Azure portal](https://portal.azure.com) create a **Storage account** (Standard, LRS; any name).
+2. Open the account → **Settings → Configuration** → set **Allow Blob anonymous access = Enabled** → Save. (The API creates a container whose blobs are publicly readable so the browser can display the images.)
+3. Open **Security + networking → Access keys** → copy a **Connection string**.
+4. Give the API the connection string **as a secret — never commit it**:
+   ```
+   dotnet user-secrets init --project RaceDay.Api
+   dotnet user-secrets set "AzureStorage:ConnectionString" "<paste connection string>" --project RaceDay.Api
+   ```
+   (In a deployed environment use the environment variable `AzureStorage__ConnectionString`.) The container name defaults to `raceday-images`; override with `AzureStorage:ContainerName`.
+
+If no connection string is set, uploads fail politely ("image storage isn't configured") and the rest of the site keeps working.
+
+### 2. Run the API
+
+```
+dotnet ef migrations add InitialCreate --project RaceDay.Api     # first time only (not committed)
+dotnet run --project RaceDay.Api --urls http://0.0.0.0:5000
+```
+
+`0.0.0.0` lets the Docker container reach the API on your machine (Windows may ask you to allow it through the firewall — choose *Private networks*). The API uses its own database, `RaceDayApi` (separate from the `RaceDay` database created by the Part 1 SQL script). If you already created `RaceDayApi` while doing Part 2, drop it once so the new image-URL columns are created: `dotnet ef database drop --project RaceDay.Api --force`, then run the API again.
+
+### 3a. Run the MVC app locally (no Docker)
+
+```
+dotnet run --project RaceDay.Web
+```
+Open **http://localhost:5100**. The API address is `ApiBaseUrl` in `RaceDay.Web/appsettings.json` (default `http://localhost:5000/`).
+
+### 3b. Run the MVC app in Docker
+
+From the repository root, with the API already running (step 2):
+
+```
+docker build -f RaceDay.Web/Dockerfile -t raceday-web .
+docker run --rm -p 8080:8080 -e ApiBaseUrl=http://host.docker.internal:5000/ raceday-web
+```
+Open **http://localhost:8080** — identical behaviour to the local run. Or, in one command:
+```
+docker compose up --build
+```
+`host.docker.internal` is how a container reaches a service on your own machine (built in on Docker Desktop for Windows and Mac; the compose file adds it for Linux).
+
+**Test accounts** (seeded by the API, password `Password123!`): Organiser `thabo.nkosi@raceday.co.za`, Participant `sarah.vdm@example.com`.
+
+### Design notes
+
+- **Session handling.** The API authenticates with a server-side session cookie. The MVC server is the API's *client*, so `ApiSessionHandler` captures the API's session cookie at login, stores it in that user's MVC session, and attaches it to every later API call. The HttpClient's own cookie jar is disabled, so one user's session can never leak to another. When the API session expires (30 min idle) a 401 sends the user back to login.
+- **Role protection** is enforced twice: the MVC `[RequireLogin("Organiser")]` filter gives a good experience, and the API's `[RequireSession]` filter is the real security boundary.
+- **Anti-forgery tokens** are required on every POST. **Passwords** are hashed by the API (BCrypt).
+- **Culture.** The app pins the invariant culture so decimals such as `10.5` bind correctly on South African (comma-decimal) machines and inside Docker.
+
+### Tests
+
+`dotnet test RaceDay.Api.Tests` — 35 tests (23 from Part 2 plus 12 new): banner and profile-picture upload (success, wrong role, someone else's event, not logged in, non-image file, fake image bytes) with a fake blob service, the organiser dashboard summary endpoint, and the participant results endpoint with finisher totals.
+
+### Part 3 CI/CD
+
+`.github/workflows/build-and-test.yml` restores and builds the **whole solution including `RaceDay.Web`**, runs all tests, publishes the MVC app, then builds the Docker image and starts it as a smoke test. `validate-repo-structure.yml` checks the Part 1–3 files, that the MVC project has no database/Azure packages, and that no storage key was committed.
+
+**Successful build:**
+
+<!-- Paste your screenshot of the green Part 3 GitHub Actions run here, e.g.: -->
+<!-- ![Part 3 CI/CD Passing](docs/cicd-success-part3.png) -->
+
+### Part 3 Video Walkthrough
+
+An unlisted YouTube video showing the running app for both roles, the MVC code structure, Azure Blob Storage integration and the Docker setup:
+
+**[Paste unlisted YouTube link here]**

@@ -3,6 +3,8 @@ using Microsoft.EntityFrameworkCore;
 using RaceDay.Api.Auth;
 using RaceDay.Api.Data;
 using RaceDay.Api.DTOs;
+using RaceDay.Api.Models;
+using RaceDay.Api.Services;
 
 namespace RaceDay.Api.Controllers;
 
@@ -11,11 +13,23 @@ namespace RaceDay.Api.Controllers;
 public class UsersController : ControllerBase
 {
     private readonly RaceDayDbContext _context;
+    private readonly IBlobStorageService _blobStorage;
 
-    public UsersController(RaceDayDbContext context)
+    public UsersController(RaceDayDbContext context, IBlobStorageService blobStorage)
     {
         _context = context;
+        _blobStorage = blobStorage;
     }
+
+    private static UserProfileDto ToProfile(User user) => new()
+    {
+        UserId = user.UserId,
+        FullName = user.FullName,
+        Email = user.Email,
+        Role = user.Role!.RoleName,
+        CreatedAt = user.CreatedAt,
+        ProfilePictureUrl = user.ProfilePictureUrl
+    };
 
     /// <summary>Returns the profile of the currently logged-in user.</summary>
     /// <remarks>Requires an active session (Organiser or Participant). Returns 200 with the profile, or 401 if nobody is logged in.</remarks>
@@ -26,14 +40,7 @@ public class UsersController : ControllerBase
         var userId = HttpContext.GetUserId();
         var user = await _context.Users.Include(u => u.Role).FirstAsync(u => u.UserId == userId);
 
-        return Ok(new UserProfileDto
-        {
-            UserId = user.UserId,
-            FullName = user.FullName,
-            Email = user.Email,
-            Role = user.Role!.RoleName,
-            CreatedAt = user.CreatedAt
-        });
+        return Ok(ToProfile(user));
     }
 
     /// <summary>Updates the logged-in user's own profile (full name and email).</summary>
@@ -53,14 +60,41 @@ public class UsersController : ControllerBase
         user.Email = dto.Email;
         await _context.SaveChangesAsync();
 
-        return Ok(new UserProfileDto
+        return Ok(ToProfile(user));
+    }
+
+    /// <summary>Uploads (or replaces) the logged-in user's profile picture, storing it in Azure Blob Storage.</summary>
+    /// <remarks>Requires an active session. Send multipart/form-data with one image file in the "file" field (JPG, PNG, WEBP or GIF, max 5 MB). The blob URL is saved on the user. Returns 200 with the updated profile, 400 for a missing or invalid image, 502 if Azure is unavailable, or 503 if Azure Blob Storage is not configured.</remarks>
+    [HttpPost("me/picture")]
+    [RequireSession]
+    [Consumes("multipart/form-data")]
+    public async Task<IActionResult> UploadMyPicture(IFormFile file, CancellationToken cancellationToken)
+    {
+        var check = await ImageRules.ValidateAsync(file);
+        if (!check.Ok)
+            return BadRequest(new { message = check.Error });
+
+        var userId = HttpContext.GetUserId();
+        var user = await _context.Users.Include(u => u.Role)
+            .FirstAsync(u => u.UserId == userId, cancellationToken);
+
+        try
         {
-            UserId = user.UserId,
-            FullName = user.FullName,
-            Email = user.Email,
-            Role = user.Role!.RoleName,
-            CreatedAt = user.CreatedAt
-        });
+            await using var stream = file.OpenReadStream();
+            user.ProfilePictureUrl = await _blobStorage.UploadImageAsync(
+                stream, file.ContentType, check.Extension, "profile-pictures", cancellationToken);
+        }
+        catch (BlobStorageNotConfiguredException)
+        {
+            return StatusCode(503, new { message = "Image storage is not configured on the server." });
+        }
+        catch (BlobStorageUnavailableException)
+        {
+            return StatusCode(502, new { message = "Image storage is currently unavailable. Please try again later." });
+        }
+
+        await _context.SaveChangesAsync(cancellationToken);
+        return Ok(ToProfile(user));
     }
 
     /// <summary>Retrieves a specific user's profile by ID.</summary>
@@ -73,13 +107,6 @@ public class UsersController : ControllerBase
         if (user is null)
             return NotFound(new { message = "User not found." });
 
-        return Ok(new UserProfileDto
-        {
-            UserId = user.UserId,
-            FullName = user.FullName,
-            Email = user.Email,
-            Role = user.Role!.RoleName,
-            CreatedAt = user.CreatedAt
-        });
+        return Ok(ToProfile(user));
     }
 }

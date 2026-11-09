@@ -25,6 +25,9 @@
     <!-- Swagger / OpenAPI -->
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
 
+    <!-- Azure Blob Storage (Part 3: event banners and profile pictures) -->
+    <PackageReference Include="Azure.Storage.Blobs" Version="12.*" />
+
     <!-- Password hashing -->
     <PackageReference Include="BCrypt.Net-Next" Version="4.0.3" />
   </ItemGroup>

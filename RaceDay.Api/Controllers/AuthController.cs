@@ -49,7 +49,8 @@ public class AuthController : ControllerBase
             FullName = user.FullName,
             Email = user.Email,
             Role = role.RoleName,
-            CreatedAt = user.CreatedAt
+            CreatedAt = user.CreatedAt,
+            ProfilePictureUrl = user.ProfilePictureUrl
         });
     }
 
@@ -80,7 +81,8 @@ public class AuthController : ControllerBase
                 FullName = user.FullName,
                 Email = user.Email,
                 Role = user.Role.RoleName,
-                CreatedAt = user.CreatedAt
+                CreatedAt = user.CreatedAt,
+                ProfilePictureUrl = user.ProfilePictureUrl
             }
         });
     }

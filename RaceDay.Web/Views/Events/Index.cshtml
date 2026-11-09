@@ -1,0 +1,71 @@
+@model EventsIndexViewModel
+@{ ViewData["Title"] = "Find events"; var user = Context.Session.GetUser(); }
+
+<div class="rd-page-head">
+    <div>
+        <h1 class="rd-h1">Hey @(user?.FullName.Split(' ')[0]), ready to race?</h1>
+        <p class="text-secondary mb-0">@Model.TotalUpcoming upcoming @(Model.TotalUpcoming == 1 ? "event" : "events") to choose from.</p>
+    </div>
+    <a asp-controller="Participant" asp-action="MyEvents" class="btn btn-rd-outline"><i class="bi bi-ticket-perforated"></i> My events</a>
+</div>
+
+<form method="get" asp-action="Index" class="rd-filter card rd-card">
+    <div class="card-body row g-3 align-items-end">
+        <div class="col-lg-4">
+            <label class="form-label" for="search">Search</label>
+            <div class="input-group">
+                <span class="input-group-text"><i class="bi bi-search"></i></span>
+                <input id="search" name="search" value="@Model.Search" class="form-control" placeholder="Event name or place" />
+            </div>
+        </div>
+        <div class="col-6 col-lg-2">
+            <label class="form-label" for="type">Type</label>
+            <select id="type" name="type" class="form-select">
+                <option value="">All types</option>
+                @foreach (var t in new[] { "Run", "Walk", "Cycle" })
+                {
+                    <option value="@t" selected="@(Model.Type == t)">@t</option>
+                }
+            </select>
+        </div>
+        <div class="col-6 col-lg-3">
+            <label class="form-label" for="distance">Distance</label>
+            <select id="distance" name="distance" class="form-select">
+                <option value="">Any distance</option>
+                <option value="short" selected="@(Model.Distance == "short")">Short (up to 10 km)</option>
+                <option value="medium" selected="@(Model.Distance == "medium")">Medium (10–21.1 km)</option>
+                <option value="long" selected="@(Model.Distance == "long")">Long (over 21.1 km)</option>
+            </select>
+        </div>
+        <div class="col-lg-3 d-flex flex-wrap gap-2 align-items-center">
+            <div class="form-check me-2">
+                <input class="form-check-input" type="checkbox" name="showPast" value="true" id="showPast" checked="@Model.ShowPast" />
+                <label class="form-check-label" for="showPast">Include past</label>
+            </div>
+            <button type="submit" class="btn btn-rd-primary">Filter</button>
+            @if (Model.HasFilter)
+            {
+                <a asp-action="Index" class="btn btn-link">Clear</a>
+            }
+        </div>
+    </div>
+</form>
+
+@if (Model.Events.Count == 0)
+{
+    <div class="rd-empty">
+        <i class="bi bi-emoji-neutral"></i>
+        <h2>No events match</h2>
+        <p>@(Model.HasFilter ? "Try loosening your filters." : "There are no upcoming events yet - check back soon.")</p>
+        @if (Model.HasFilter) { <a asp-action="Index" class="btn btn-rd-primary">Clear filters</a> }
+    </div>
+}
+else
+{
+    <div class="row g-4">
+        @foreach (var ev in Model.Events)
+        {
+            <div class="col-md-6 col-xl-4"><partial name="_EventCard" model="ev" /></div>
+        }
+    </div>
+}

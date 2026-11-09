@@ -14,6 +14,9 @@ public class User
     public int RoleId { get; set; }
     public Role? Role { get; set; }
 
+    // Part 3: public URL of the profile picture stored in Azure Blob Storage.
+    public string? ProfilePictureUrl { get; set; }
+
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     public ICollection<Event> OrganisedEvents { get; set; } = new List<Event>();

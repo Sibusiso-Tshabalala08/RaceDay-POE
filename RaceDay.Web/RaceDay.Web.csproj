@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>RaceDay.Web</RootNamespace>
+  </PropertyGroup>
+
+  <!--
+    Deliberately NO database or Azure packages: this project only talks to the
+    Part 2 API over HTTP (brief: "must not contain any direct database access
+    or replicated business logic", and "must not communicate with Azure
+    directly").
+  -->
+
+</Project>

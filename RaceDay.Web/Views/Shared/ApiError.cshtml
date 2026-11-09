@@ -1,0 +1,9 @@
+@model ErrorViewModel
+@{ ViewData["Title"] = Model.Title; }
+<div class="rd-empty text-center">
+    <i class="bi @(Model.ApiUnavailable ? "bi-wifi-off" : "bi-exclamation-octagon")"></i>
+    <h1>@Model.Title</h1>
+    <p>@Model.Message</p>
+    <a href="javascript:location.reload()" class="btn btn-rd-primary"><i class="bi bi-arrow-clockwise"></i> Try again</a>
+    <a asp-controller="Home" asp-action="Index" class="btn btn-rd-outline">Back to home</a>
+</div>

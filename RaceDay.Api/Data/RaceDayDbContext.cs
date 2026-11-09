@@ -28,6 +28,7 @@ public class RaceDayDbContext : DbContext
         modelBuilder.Entity<User>(entity =>
         {
             entity.HasIndex(u => u.Email).IsUnique();
+            entity.Property(u => u.ProfilePictureUrl).HasMaxLength(500);
 
             entity.HasOne(u => u.Role)
                   .WithMany(r => r.Users)
@@ -46,6 +47,7 @@ public class RaceDayDbContext : DbContext
             entity.Property(e => e.Distance).HasColumnType("decimal(6,2)");
             entity.Property(e => e.Latitude).HasColumnType("decimal(9,6)");
             entity.Property(e => e.Longitude).HasColumnType("decimal(9,6)");
+            entity.Property(e => e.BannerImageUrl).HasMaxLength(500);
 
             entity.ToTable(t => t.HasCheckConstraint(
                 "CHK_Event_Type", "[EventType] IN ('Run', 'Walk', 'Cycle')"));

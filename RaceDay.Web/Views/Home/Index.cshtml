@@ -1,0 +1,46 @@
+@model List<EventDto>
+@{ ViewData["Title"] = "Run it. Ride it. Remember it."; }
+
+<section class="rd-hero">
+    <div class="rd-hero-inner">
+        <span class="rd-eyebrow"><i class="bi bi-lightning-charge-fill"></i> South Africa's race-day hub</span>
+        <h1>Find your next<br />start line.</h1>
+        <p>Browse runs, walks and cycle races, enter in a click, and see your finish times and positions all in one place. Organisers: set up events, categories and results without the spreadsheets.</p>
+        <div class="d-flex flex-wrap gap-2">
+            <a asp-controller="Account" asp-action="Register" class="btn btn-rd-primary btn-lg">Join as a participant</a>
+            <a asp-controller="Account" asp-action="Register" asp-route-role="Organiser" class="btn btn-rd-ghost btn-lg">I organise events</a>
+        </div>
+    </div>
+</section>
+
+<section class="rd-section">
+    <div class="d-flex justify-content-between align-items-end mb-3">
+        <h2 class="rd-h2 mb-0">Coming up</h2>
+        <a asp-controller="Account" asp-action="Login" class="small">Log in to see all events <i class="bi bi-arrow-right"></i></a>
+    </div>
+    @if (ViewBag.ApiDown == true)
+    {
+        <div class="alert alert-warning"><i class="bi bi-wifi-off"></i> We can't load events right now. Please refresh in a moment.</div>
+    }
+    else if (Model.Count == 0)
+    {
+        <div class="rd-empty"><i class="bi bi-calendar-x"></i><p>No upcoming events yet. Check back soon!</p></div>
+    }
+    else
+    {
+        <div class="row g-4">
+            @foreach (var ev in Model)
+            {
+                <div class="col-md-6 col-lg-4"><partial name="_EventCard" model="ev" /></div>
+            }
+        </div>
+    }
+</section>
+
+<section class="rd-section">
+    <div class="row g-4 rd-steps">
+        <div class="col-md-4"><div class="rd-step"><span>1</span><h3>Create an account</h3><p>Pick Participant or Organiser. It takes under a minute.</p></div></div>
+        <div class="col-md-4"><div class="rd-step"><span>2</span><h3>Enter or create events</h3><p>Choose your category and enrol, or build events with age and distance categories.</p></div></div>
+        <div class="col-md-4"><div class="rd-step"><span>3</span><h3>Cross the line</h3><p>Results are recorded by the organiser and show up on your profile, with your position.</p></div></div>
+    </div>
+</section>
