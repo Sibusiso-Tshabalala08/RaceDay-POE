@@ -259,4 +259,4 @@ docker compose up --build
 
 An unlisted YouTube video showing the running app for both roles, the MVC code structure, Azure Blob Storage integration and the Docker setup:
 
-**[Paste unlisted YouTube link here]**
+**[Watch the Part 3 demo video](https://youtu.be/H3swFvX7en4)** 
